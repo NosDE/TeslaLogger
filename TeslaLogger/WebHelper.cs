@@ -3443,7 +3443,7 @@ namespace TeslaLogger
             }
             catch (Exception ex)
             {
-                if (resultContent == null || resultContent == "NULL")
+                if (resultContent == null || resultContent == "NULL" )
                 {
                     Log("IsDriving = NULL!");
                     Thread.Sleep(10000);
@@ -3867,9 +3867,9 @@ namespace TeslaLogger
             {
                 // speed is converted by InsertPos
                 // power is converted by InsertPos
-                double dodometer_km = dodometer / 0.62137119223733;
+                double dodometer_km = Tools.MlToKm(dodometer);
                 // battery_range_km = range in ml to km
-                double battery_range_km = irange / 0.62137119223733;
+                double battery_range_km = Tools.MlToKm(irange);
                 // ideal_battery_range_km = ideal_battery_range_km * car specific factor
                 double ideal_battery_range_km = battery_range_km * battery_range2ideal_battery_range;
                 double? outside_temp = car.CurrentJSON.current_outside_temperature;
@@ -3883,6 +3883,9 @@ namespace TeslaLogger
                     //Tools.DebugLog($"Stream: InsertPos({v[0]}, {latitude}, {longitude}, {ispeed}, {dpower}, {dodometer_km}, {ideal_battery_range_km}, {battery_range_km}, {isoc}, {outside_temp}, String.Empty)");
                     car.DbHelper.InsertPos(v[0], latitude, longitude, ispeed, dpower, dodometer_km, ideal_battery_range_km, battery_range_km, isoc, outside_temp, String.Empty);
                 }
+            }
+            if (int.TryParse(heading, out int iheading)) {  // heading in degrees
+                car.CurrentJSON.heading = iheading;
             }
         }
 
@@ -4903,6 +4906,12 @@ DESC", con))
 
                         return resultContent;
                     }
+
+                    if (cmd.Contains("vehicle_data") && noMemcache == false && result.StatusCode == HttpStatusCode.RequestTimeout)
+                    {
+                        MemoryCache.Default.Add(cacheKey, "NULL", DateTime.Now.AddSeconds(15));
+                    }
+
                     DBHelper.AddMothershipDataToDB("GetCommand(" + cmd + ")", double.Parse("-1." + (int)result.StatusCode, Tools.ciEnUS), (int)result.StatusCode, car.CarInDB);
                     if (result.StatusCode == HttpStatusCode.Unauthorized)
                     {
@@ -5561,7 +5570,7 @@ DESC", con))
                     }
                 }
 
-                double speed_kmh = (int)DBHelper.MphToKmhRounded(speed_mph);
+                double speed_kmh = (int)Tools.MphToKmhRounded(speed_mph);
 
                 Dictionary<string, object> values = new Dictionary<string, object>
                     {
